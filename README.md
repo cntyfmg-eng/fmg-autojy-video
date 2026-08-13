@@ -1,6 +1,6 @@
-# fmg-autoJY-video（PPT 课件转剪映微课）
+# fmg-autoJY-video（调用剪映自动剪辑视频）
 
-把一份 PPT 课件 + 一段导入视频，自动生成一节带 **AI 配音、字幕** 的剪映微课草稿，并导出可播放的 **MP4**。
+分析所有素材（含PPT课件），自动调用剪映生成带 **AI 配音、字幕** 的剪映微课草稿，并导出可播放的 **MP4**。
 
 > 原名 `fmg-ppt-jianying-microlesson`，在 SkillHub / GitHub 统一命名为 `fmg-autoJY-video`。
 
