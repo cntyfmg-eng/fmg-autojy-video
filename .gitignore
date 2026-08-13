@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 本地安装元数据（含本机路径/ownerId，勿上传）
+_meta.json
+_skillhub_meta.json
+*.egg-info/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
