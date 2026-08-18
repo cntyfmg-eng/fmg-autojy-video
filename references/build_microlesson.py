@@ -282,43 +282,44 @@ def concat_final_video(srt_path):
 
 
 def build_jy_project(import_dur, slide_durs, chunk_timings):
-    """同时生成一个剪映专业版可编辑的草稿工程（字幕逐短句、与配音同步）。"""
-    print("\n=== 生成剪映草稿工程 ===")
-    sys.path.insert(0, str(SKILL_ROOT / "scripts"))
-    from jy_wrapper import JyProject
-    import pyJianYingDraft as draft
+    """生成一个剪映专业版可编辑的草稿工程（字幕逐短句、与配音同步）。
 
-    import time
-    project_name = f"宝葫芦的秘密_微课_{int(time.time())}"
-    project = JyProject(project_name, width=1920, height=1080, overwrite=False)
+    采用版本感知的 jy_draft 模块：自动探测本机剪映版本（v5.9 / v10.9 / v11.2 …），
+    写出该版本兼容的草稿。v10.9 / v11.2 使用同一套现代格式，可直接打开；
+    旧版打开会自动升级。生成过程不依赖 pyJianYingDraft，纯标准库实现。
+    """
+    print("\n=== 生成剪映草稿工程（版本感知） ===")
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    import jy_draft as J
 
-    project.add_media_safe(str(IMPORT_VIDEO), "0s", duration=f"{import_dur:.3f}s", track_name="Video")
-
-    cursor = import_dur + 0.1
+    # 视频片段：导入视频 + 各页幻灯片（与最终 MP4 / SRT 同一时间轴，无间隙）
+    clips = [{
+        "path": str(IMPORT_VIDEO), "start": 0.0, "duration": import_dur,
+        "name": "导入视频", "width": 1920, "height": 1080,
+    }]
+    cursor = import_dur
     for i, dur in enumerate(slide_durs, 1):
-        slide_mp4 = WORK_DIR / f"slide_{i:02d}.mp4"
-        project.add_media_safe(str(slide_mp4), f"{cursor:.3f}s", duration=f"{dur:.3f}s", track_name="Video")
-        cursor += dur + 0.1
+        clips.append({
+            "path": str(WORK_DIR / f"slide_{i:02d}.mp4"), "start": cursor, "duration": dur,
+            "name": f"幻灯片{i:02d}", "width": 1920, "height": 1080,
+        })
+        cursor += dur
 
-    # 逐短句字幕，与配音同步
-    cursor = import_dur + 0.1
+    # 逐短句字幕，与配音严格同步
+    subtitles = []
+    cursor = import_dur
     for i, (s, dur) in enumerate(zip(SLIDES, slide_durs), 1):
         offset = 0.0
         for (chunk, cd) in chunk_timings.get(i, [(s["narration"], dur)]):
-            project.add_text_simple(
-                chunk,
-                start_time=f"{cursor + offset:.3f}s",
-                duration=f"{cd:.3f}s",
-                track_name="Subtitles",
-                clip_settings=draft.ClipSettings(transform_y=-0.82),
-                style=draft.TextStyle(size=2.4),
-                border=draft.TextBorder(color=(0.0, 0.0, 0.0), alpha=0.55, width=14.0),
-            )
+            subtitles.append({"text": chunk, "start": cursor + offset, "duration": cd})
             offset += cd
-        cursor += dur + 0.1
+        cursor += dur
 
-    project.save()
-    print(f"  剪映草稿已保存：{project.name}")
+    out, ver = J.export_draft(
+        clips, subtitles, project_name="宝葫芦的秘密_微课",
+        ffmpeg=FFMPEG, width=1920, height=1080,
+    )
+    print(f"  剪映草稿已保存（v{ver} 兼容）：{out}")
 
 
 def verify_output():
